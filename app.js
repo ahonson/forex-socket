@@ -13,17 +13,17 @@ const io = require('socket.io')(server);
 io.on('connection', async function (socket) {
     console.info("User connected");
     try {
-        let res = await findInCollection(dsn, "posts", {}, {}, 0);
-        io.emit('earlier chat', res)
+        // let res = await findInCollection(dsn, "posts", {}, {}, 0);
+        io.emit('earlier chat', "result")
     } catch (err) {
         console.log(err);
     }
 
-    socket.on('chat message', async function (message) {
-        io.emit('chat message', message);
-        await saveToCollection(dsn, "posts", message);
-        console.log(message);
-    });
+    // socket.on('chat message', async function (message) {
+    //     io.emit('chat message', message);
+    //     await saveToCollection(dsn, "posts", message);
+    //     console.log(message);
+    // });
 });
 
 app.get('/', (req, res) => {
