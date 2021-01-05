@@ -38,12 +38,6 @@ io.on('connection', async function (socket) {
 
 
 app.get('/', function(req, res, next) {
-    // var info = await getLatest();
-    //
-    // console.log("KKKKKKKKKKKKKK");
-    // console.log(info);
-    // // res.send('<h1>Hallo Welt</h1>');
-    // await res.send(info);
     let sql = "SELECT * FROM currencies ORDER BY id DESC LIMIT 1;";
 
     db.serialize(function() {
@@ -55,6 +49,8 @@ app.get('/', function(req, res, next) {
             var newchf = (row.chf * getVariance()).toFixed(2);
             var neweur = (row.eur * getVariance()).toFixed(2);
             var newgbp = (row.gbp * getVariance()).toFixed(2);
+            var highestid = row.id;
+            var limit = 40;
 
             res.json({
                 id: row.id,
@@ -64,21 +60,43 @@ app.get('/', function(req, res, next) {
                 gbp: newgbp,
                 rate_date: row.rate_date
             });
-            db.run("INSERT INTO currencies (chf, gbp, usd, eur) VALUES (?, ?, ?, ?)",
-                [newchf, newgbp, newusd, neweur], (err) => {
-                    if (err) {
-                    console.log("---------HIBAHIBA-----------------------");
-                    console.log(err);
-                    }
-                    // returnera korrekt svar
-                });
-
-            // return row.rate_date
-            //     ? console.log(row.rate_date)
-            //     : console.log(`No email found with the name`);
+            insertValues(newchf, newgbp, newusd, neweur);
+            deleteValues(limit, highestid);
         });
     });
 });
+
+function deleteValues(limit, highestid) {
+    let sql1 = "SELECT COUNT(id) AS total FROM CURRENCIES";
+
+    db.get(sql1, (err, row) => {
+        if (err) {
+            return console.error(err.message);
+        }
+        console.log("SSSSSSSSSSSSSSSSSS");
+        console.log(row.total, limit);
+        if (row.total > limit) {
+            let sql2 = "DELETE FROM currencies WHERE id < ?";
+            let midlimit = highestid - limit / 2;
+
+            db.run(sql2, [midlimit], (err) => {
+                    if (err) {
+                    console.log(err);
+                    }
+            });
+        }
+    });
+}
+
+function insertValues(newchf, newgbp, newusd, neweur) {
+    let sql = "INSERT INTO currencies (chf, gbp, usd, eur) VALUES (?, ?, ?, ?)";
+
+    db.run(sql, [newchf, newgbp, newusd, neweur], (err) => {
+            if (err) {
+            console.log(err);
+            }
+    });
+}
 
 function randInt(min, max) { // function taken from https://www.w3schools.com/js/js_random.asp
     return Math.floor(Math.random() * (max - min) ) + min; // upper value not included
