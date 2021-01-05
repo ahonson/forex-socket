@@ -8,26 +8,25 @@ const server = app.listen(port, () => console.log(`Example API listening on port
 const io = require('socket.io')(server);
 const db = require("./db/database.js");
 
-// MongoDB
-// const mongo = require("mongodb").MongoClient;
-// const dsn =  process.env.DBWEBB_DSN || "mongodb://localhost:27017/chat";
-
-// gbp = 1
-var baserates = {
-    sek: 0.09,
-    usd: 0.73,
-    eur: 0.89,
-    chf: 0.82
-}
-
 io.on('connection', async function (socket) {
     console.info("User connected");
-    try {
-        // let res = await findInCollection(dsn, "posts", {}, {}, 0);
-        io.emit('earlier chat', "result")
-    } catch (err) {
-        console.log(err);
-    }
+
+    // setInterval(() => {
+    //     var mydata = await getValues();
+    //
+    //     io.emit('current rates', mydata);
+    // }, 5000);
+
+    var mydata = await getValues();
+
+    io.emit('current rates', mydata);
+
+    // try {
+    //     // let res = await findInCollection(dsn, "posts", {}, {}, 0);
+    //     io.emit('earlier chat', "result")
+    // } catch (err) {
+    //     console.log(err);
+    // }
 
     // socket.on('chat message', async function (message) {
     //     io.emit('chat message', message);
@@ -66,6 +65,28 @@ app.get('/', function(req, res, next) {
     });
 });
 
+function getValues() {
+    let sql = "SELECT * FROM currencies ORDER BY id DESC LIMIT 1;";
+
+    db.serialize(function() {
+        db.get(sql, (err, row) => {
+            if (err) {
+                return console.error(err.message);
+            }
+            var newusd = (row.usd * getVariance()).toFixed(2);
+            var newchf = (row.chf * getVariance()).toFixed(2);
+            var neweur = (row.eur * getVariance()).toFixed(2);
+            var newgbp = (row.gbp * getVariance()).toFixed(2);
+            var highestid = row.id;
+            var limit = 40;
+
+            // insertValues(newchf, newgbp, newusd, neweur);
+            // deleteValues(limit, highestid);
+            return row;
+        });
+    });
+}
+
 function deleteValues(limit, highestid) {
     let sql1 = "SELECT COUNT(id) AS total FROM CURRENCIES";
 
@@ -73,8 +94,8 @@ function deleteValues(limit, highestid) {
         if (err) {
             return console.error(err.message);
         }
-        console.log("SSSSSSSSSSSSSSSSSS");
-        console.log(row.total, limit);
+        // console.log("SSSSSSSSSSSSSSSSSS");
+        // console.log(row.total, limit);
         if (row.total > limit) {
             let sql2 = "DELETE FROM currencies WHERE id < ?";
             let midlimit = highestid - limit / 2;
