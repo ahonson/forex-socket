@@ -8,33 +8,15 @@ const server = app.listen(port, () => console.log(`Example API listening on port
 const io = require('socket.io')(server);
 const db = require("./db/database.js");
 
-io.on('connection', async function (socket) {
+var mydata = [9.32, 10.06, 11.13, 8.20];
+
+io.on('connection', function (socket) {
     console.info("User connected");
 
-    // setInterval(() => {
-    //     var mydata = await getValues();
-    //
-    //     io.emit('current rates', mydata);
-    // }, 5000);
-
-    var mydata = await getValues();
-
-    io.emit('current rates', mydata);
-
-    // try {
-    //     // let res = await findInCollection(dsn, "posts", {}, {}, 0);
-    //     io.emit('earlier chat', "result")
-    // } catch (err) {
-    //     console.log(err);
-    // }
-
-    // socket.on('chat message', async function (message) {
-    //     io.emit('chat message', message);
-    //     await saveToCollection(dsn, "posts", message);
-    //     console.log(message);
-    // });
+    setInterval(() => {
+        getValues(socket);
+    }, 5000);
 });
-
 
 app.get('/', function(req, res, next) {
     let sql = "SELECT * FROM currencies ORDER BY id DESC LIMIT 1;";
@@ -65,23 +47,32 @@ app.get('/', function(req, res, next) {
     });
 });
 
-function getValues() {
+async function getValues(socket) {
     let sql = "SELECT * FROM currencies ORDER BY id DESC LIMIT 1;";
 
-    db.serialize(function() {
-        db.get(sql, (err, row) => {
+    let res = await db.serialize(async function() {
+        await db.get(sql, (err, row) => {
             if (err) {
                 return console.error(err.message);
             }
-            var newusd = (row.usd * getVariance()).toFixed(2);
-            var newchf = (row.chf * getVariance()).toFixed(2);
-            var neweur = (row.eur * getVariance()).toFixed(2);
-            var newgbp = (row.gbp * getVariance()).toFixed(2);
+            var newchf = Number((row.chf * getVariance()).toFixed(2));
+            var neweur = Number((row.eur * getVariance()).toFixed(2));
+            var newgbp = Number((row.gbp * getVariance()).toFixed(2));
+            var newusd = Number((row.usd * getVariance()).toFixed(2));
             var highestid = row.id;
-            var limit = 40;
+            var limit = 1000;
+            var allValues = [newchf, neweur, newgbp, newusd];
 
-            // insertValues(newchf, newgbp, newusd, neweur);
-            // deleteValues(limit, highestid);
+            console.log("hajhaj", allValues);
+            if (Math.max.apply(Math, allValues) > 14 || Math.min.apply(Math, allValues) < 4) {
+                socket.emit('current rates', mydata);
+                insertValues(9.32, 10.06, 11.13, 8.20);
+                deleteValues(limit, highestid);
+            } else {
+                socket.emit('current rates', allValues);
+                insertValues(newchf, neweur, newgbp, newusd);
+                deleteValues(limit, highestid);
+            }
             return row;
         });
     });
@@ -94,8 +85,6 @@ function deleteValues(limit, highestid) {
         if (err) {
             return console.error(err.message);
         }
-        // console.log("SSSSSSSSSSSSSSSSSS");
-        // console.log(row.total, limit);
         if (row.total > limit) {
             let sql2 = "DELETE FROM currencies WHERE id < ?";
             let midlimit = highestid - limit / 2;
@@ -109,10 +98,10 @@ function deleteValues(limit, highestid) {
     });
 }
 
-function insertValues(newchf, newgbp, newusd, neweur) {
-    let sql = "INSERT INTO currencies (chf, gbp, usd, eur) VALUES (?, ?, ?, ?)";
+function insertValues(newchf, neweur, newgbp, newusd) {
+    let sql = "INSERT INTO currencies (chf, eur, gbp, usd) VALUES (?, ?, ?, ?)";
 
-    db.run(sql, [newchf, newgbp, newusd, neweur], (err) => {
+    db.run(sql, [newchf, neweur, newgbp, newusd], (err) => {
             if (err) {
             console.log(err);
             }
