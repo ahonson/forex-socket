@@ -12,11 +12,31 @@ var mydata = [9.32, 10.06, 11.13, 8.20];
 
 io.on('connection', function (socket) {
     console.info("User connected");
+    console.log(socket.connected, io.engine.clientsCount, io.sockets.sockets.length, Object.keys(io.sockets.connected).length);
 
-    setInterval(() => {
-        // getValues(socket);
-        get10Values(socket);
-    }, 5000);
+    if (io.engine.clientsCount === 1) {
+        var myInterval = setInterval(() => {
+            console.log("1 -------------");
+            get10Values(socket);
+        }, 5000);
+        socket.on("disconnect", function() {
+            clearInterval(myInterval);
+        });
+    } else if (io.engine.clientsCount > 1) {
+        var myInterval = setInterval(() => {
+            console.log("2 -------------");
+            if (io.engine.clientsCount === 1) {
+                console.log("3 -------------");
+                get10Values(socket);
+            } else if (io.engine.clientsCount > 1) {
+                console.log("4 -------------");
+                get10ValuesNoSave(socket);
+            }
+        }, 5000);
+        socket.on("disconnect", function() {
+            clearInterval(myInterval);
+        });
+    }
 });
 
 app.get('/', function(req, res, next) {
@@ -108,6 +128,32 @@ async function get10Values(socket) {
                     insertValues(newchf, neweur, newgbp, newusd);
                     deleteValues(limit, highestid);
                 }
+                return rows;
+            }
+        });
+    });
+}
+
+async function get10ValuesNoSave(socket) {
+    let sql = "SELECT * FROM currencies ORDER BY id DESC LIMIT 10;";
+
+    let res = await db.serialize(async function() {
+        await db.all(sql, (err, rows) => {
+            if (err) {
+                return console.error(err.message);
+            }
+            if (rows) {
+                console.log(rows);
+
+                var newchf = Number((rows[0].chf * getVariance()).toFixed(2));
+                var neweur = Number((rows[0].eur * getVariance()).toFixed(2));
+                var newgbp = Number((rows[0].gbp * getVariance()).toFixed(2));
+                var newusd = Number((rows[0].usd * getVariance()).toFixed(2));
+                var highestid = rows[0].id;
+                var limit = 1000;
+                var allValues = [newchf, neweur, newgbp, newusd];
+
+                socket.emit('current rates', rows);
                 return rows;
             }
         });
