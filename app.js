@@ -14,7 +14,8 @@ io.on('connection', function (socket) {
     console.info("User connected");
 
     setInterval(() => {
-        getValues(socket);
+        // getValues(socket);
+        get10Values(socket);
     }, 5000);
 });
 
@@ -77,6 +78,42 @@ async function getValues(socket) {
         });
     });
 }
+
+async function get10Values(socket) {
+    let sql = "SELECT * FROM currencies ORDER BY id DESC LIMIT 10;";
+
+    let res = await db.serialize(async function() {
+        await db.all(sql, (err, rows) => {
+            if (err) {
+                return console.error(err.message);
+            }
+            if (rows) {
+                console.log(rows);
+
+                var newchf = Number((rows[0].chf * getVariance()).toFixed(2));
+                var neweur = Number((rows[0].eur * getVariance()).toFixed(2));
+                var newgbp = Number((rows[0].gbp * getVariance()).toFixed(2));
+                var newusd = Number((rows[0].usd * getVariance()).toFixed(2));
+                var highestid = rows[0].id;
+                var limit = 1000;
+                var allValues = [newchf, neweur, newgbp, newusd];
+
+                console.log("hajhaj", allValues);
+                if (Math.max.apply(Math, allValues) > 13 || Math.min.apply(Math, allValues) < 6) {
+                    socket.emit('current rates', rows);
+                    insertValues(9.32, 10.06, 11.13, 8.20);
+                    deleteValues(limit, highestid);
+                } else {
+                    socket.emit('current rates', rows);
+                    insertValues(newchf, neweur, newgbp, newusd);
+                    deleteValues(limit, highestid);
+                }
+                return rows;
+            }
+        });
+    });
+}
+
 
 function deleteValues(limit, highestid) {
     let sql1 = "SELECT COUNT(id) AS total FROM CURRENCIES";

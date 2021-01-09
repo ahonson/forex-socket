@@ -13,3 +13,12 @@ CREATE TABLE IF NOT EXISTS currencies (
 );
 
 INSERT INTO currencies (chf, eur, gbp, usd) VALUES (9.32, 10.06, 11.13, 8.20);
+INSERT INTO currencies (chf, eur, gbp, usd) VALUES (9.32, 10.06, 11.13, 8.20);
+INSERT INTO currencies (chf, eur, gbp, usd) VALUES (9.32, 10.06, 11.13, 8.20);
+INSERT INTO currencies (chf, eur, gbp, usd) VALUES (9.32, 10.06, 11.13, 8.20);
+INSERT INTO currencies (chf, eur, gbp, usd) VALUES (9.32, 10.06, 11.13, 8.20);
+INSERT INTO currencies (chf, eur, gbp, usd) VALUES (9.32, 10.06, 11.13, 8.20);
+INSERT INTO currencies (chf, eur, gbp, usd) VALUES (9.32, 10.06, 11.13, 8.20);
+INSERT INTO currencies (chf, eur, gbp, usd) VALUES (9.32, 10.06, 11.13, 8.20);
+INSERT INTO currencies (chf, eur, gbp, usd) VALUES (9.32, 10.06, 11.13, 8.20);
+INSERT INTO currencies (chf, eur, gbp, usd) VALUES (9.32, 10.06, 11.13, 8.20);
